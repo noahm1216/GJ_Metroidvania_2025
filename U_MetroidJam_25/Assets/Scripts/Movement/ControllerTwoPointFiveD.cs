@@ -13,11 +13,13 @@ public class ControllerTwoPointFiveD : MonoBehaviour
     public float speedJumpPower = 500;
     public LayerMask jumpRestoreLayers;
 
+    public SummonData[] summonRb3ds;
+
     // input mappings
     private string inputAxisHori = "Horizontal", 
         inputAxisVert = "Vertical",
         inputAxisSprint = "Sprint",   
-        inputAxisJump = "Jump";    
+        inputAxisAbility = "Jump";    
 
     // movement calculation data
     private Vector3 movementInput;
@@ -66,7 +68,21 @@ public class ControllerTwoPointFiveD : MonoBehaviour
         // jump        
         canJump = jumpsRemaining > 0 & Time.time > jumpTimeStamp + jumpTimeWait;
         if (movementInput.y > 0 && canJump) { jumpNow = true; jumpTimeStamp = Time.time; jumpsRemaining--; }
+
+        // summon abilities
+        if (Input.GetAxis(inputAxisAbility) > deadzone)
+        {
+            if (summonRb3ds.Length > 0)
+            {
+                for (int i = 0; i < summonRb3ds.Length; i++)
+                {
+                    if (summonRb3ds[i].gameObject.activeSelf == true)
+                        summonRb3ds[i].ActivateAbility();
+                }
+            }
+        }
     }
+
 
     private void FixedUpdate()
     {
@@ -75,13 +91,40 @@ public class ControllerTwoPointFiveD : MonoBehaviour
             rb3d.velocity.y, // Y
             0); // Z
 
-        if (jumpNow) { print("Jump Up"); jumpNow = false;  rb3d.AddForce(((Vector3.up) * Time.deltaTime * speedJumpPower - rb3d.velocity), ForceMode.VelocityChange); }        
+        // SUMMONS
+        if (summonRb3ds.Length > 0)
+        {
+            for (int i = 0; i < summonRb3ds.Length; i++)
+            {
+                if (summonRb3ds[i].rb3d)
+                {
+                    if (summonRb3ds[i].rb3d.isKinematic)
+                        summonRb3ds[i].transform.Translate(movementInput * speedHorizontal * Time.deltaTime);
+                    else
+                        summonRb3ds[i].rb3d.velocity = new Vector3(movementInput.x * speedHorizontal, // X
+                    summonRb3ds[i].rb3d.velocity.y, // Y
+                    0); // Z
+                }
+            }
+        }
+
+        if (jumpNow)
+        {
+            jumpNow = false;
+            rb3d.AddForce(((Vector3.up) * Time.deltaTime * speedJumpPower - rb3d.velocity), ForceMode.VelocityChange);
+
+            // SUMMONS
+            if(summonRb3ds.Length > 0)
+                for(int i =0; i < summonRb3ds.Length; i++)
+                    if (summonRb3ds[i].rb3d)
+                        summonRb3ds[i].rb3d.AddForce(((summonRb3ds[i].transform.up) * Time.deltaTime * speedJumpPower - summonRb3ds[i].rb3d.velocity), ForceMode.VelocityChange);
+        }        
     }
 
     private void OnCollisionEnter(Collision col)
     {
         // Check if the otherLayer
-        if (((1 << col.gameObject.layer) & jumpRestoreLayers) != 0)
+        if (((1 << col.gameObject.layer) & jumpRestoreLayers) != 0 && col.transform.position.y < transform.position.y)
         { print("reset jumps"); jumpsRemaining = numberOfJump; }
     }
 }
