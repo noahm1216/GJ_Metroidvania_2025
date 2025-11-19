@@ -18,9 +18,11 @@ public class ControllerRailRider : MonoBehaviour
     public int numberOfJump = 1;
     public float speedJumpPower = 500;
     public LayerMask jumpRestoreLayers;
-    public LayerMask railWayLayers;
+    private bool facingRight;
+    
 
     [Header("Rail")]
+    public LayerMask railWayLayers;
     [SerializeField] Rail currentRailScript;
     public float railAcceleration = 2f;  // Optional acceleration along the rail
     [SerializeField] float grindSpeed;
@@ -30,6 +32,8 @@ public class ControllerRailRider : MonoBehaviour
     [SerializeField] float lerpSpeed = 10f;
     public MOTIONSTATE motionState;
     public Spline splineRiding;
+    private Quaternion storedRotationBeforeRail;
+
 
     // input mappings
     private string inputAxisHori = "Horizontal",
@@ -73,6 +77,9 @@ public class ControllerRailRider : MonoBehaviour
         switch (motionState)
         {
             case MOTIONSTATE.NotRiding:
+                // direction facing
+                if (movementInput.x < 0 && !facingRight) { transform.Rotate(0, 180, 0); facingRight = true; }
+                if(movementInput.x > 0 && facingRight) { transform.Rotate(0, -180, 0); facingRight = false; }
                 // Sprint logic
                 if (Mathf.Abs(Input.GetAxis(inputAxisSprint)) > deadzone)
                 {
@@ -131,7 +138,7 @@ public class ControllerRailRider : MonoBehaviour
         {
             jumpNow = false;
             if (motionState == MOTIONSTATE.Riding)
-                ThrowOffRail();
+            { print("We should jump up off the rail"); ThrowOffRail(); }
             else
                 rb3d.AddForce(((Vector3.up) * Time.deltaTime * speedJumpPower - rb3d.velocity), ForceMode.VelocityChange);            
         }
@@ -179,10 +186,20 @@ public class ControllerRailRider : MonoBehaviour
             //Setting the player's position and adding a height offset so that they're sitting on top of the rail
             //instead of being in the middle of it.
             transform.position = worldPos + (transform.up * heightOffset);
-            //Lerping the player's current rotation to the direction of where they are to where they're going.
-            transform.rotation = Quaternion.Lerp(transform.rotation, Quaternion.LookRotation(nextPos - worldPos), lerpSpeed * Time.deltaTime);
-            //Lerping the player's up direction to match that of the rail, in relation to the player's current rotation.
-            transform.rotation = Quaternion.Lerp(transform.rotation, Quaternion.FromToRotation(transform.up, up) * transform.rotation, lerpSpeed * Time.deltaTime);
+            #region old spline rotate with rail
+            ////Lerping the player's current rotation to the direction of where they are to where they're going.
+            //transform.rotation = Quaternion.Lerp(transform.rotation, Quaternion.LookRotation(nextPos - worldPos), lerpSpeed * Time.deltaTime);
+            ////Lerping the player's up direction to match that of the rail, in relation to the player's current rotation.
+            //transform.rotation = Quaternion.Lerp(transform.rotation, Quaternion.FromToRotation(transform.up, up) * transform.rotation, lerpSpeed * Time.deltaTime);
+            #endregion
+            // NEW – clean, stable, upright, no sideways tilt
+            Vector3 forwardDir = (nextPos - worldPos).normalized;
+            transform.rotation = Quaternion.Lerp(
+                transform.rotation,
+                Quaternion.LookRotation(forwardDir, Vector3.up),
+                lerpSpeed * Time.deltaTime
+            );
+
 
             //Finally incrementing or decrementing elapsed time for the next update based on direction.
             if (currentRailScript.normalDir)
@@ -203,6 +220,7 @@ public class ControllerRailRider : MonoBehaviour
         {
             print("hit RAIL");            
             motionState = MOTIONSTATE.Riding;
+            storedRotationBeforeRail = transform.rotation;
 
             // Get SplineContainer and retrieve the spline
             SplineContainer splineContainer = col.transform.GetComponent<SplineContainer>();
@@ -247,6 +265,7 @@ public class ControllerRailRider : MonoBehaviour
         //Set onRail to false, clear the rail script, and push the player off the rail.
         //It's a little sudden, there might be a better way of doing using coroutines and looping, but this will work.
         motionState = MOTIONSTATE.NotRiding;
+        transform.rotation = storedRotationBeforeRail;
         currentRailScript = null;
         transform.position += transform.forward * 1;
         rb3d.isKinematic = false;
