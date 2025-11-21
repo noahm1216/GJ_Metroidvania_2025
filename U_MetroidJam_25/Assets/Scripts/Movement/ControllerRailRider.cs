@@ -38,8 +38,8 @@ public class ControllerRailRider : MonoBehaviour
     // input mappings
     private string inputAxisHori = "Horizontal",
         inputAxisVert = "Vertical",
-        inputAxisSprint = "Sprint",
-        inputAxisAbility = "Jump";
+        inputAxisSprint = "Sprint";
+        //inputAxisAbility = "Jump";
 
     // movement calculation data
     private Vector3 movementInput;
@@ -137,11 +137,13 @@ public class ControllerRailRider : MonoBehaviour
         if (jumpNow)
         {
             jumpNow = false;
+
             if (motionState == MOTIONSTATE.Riding)
-            { print("We should jump up off the rail"); ThrowOffRail(); }
+                JumpOffRail();
             else
-                rb3d.AddForce(((Vector3.up) * Time.deltaTime * speedJumpPower - rb3d.velocity), ForceMode.VelocityChange);            
+                JumpNormally();
         }
+
     }
 
     void MovePlayerAlongRail()
@@ -260,7 +262,7 @@ public class ControllerRailRider : MonoBehaviour
     }
 
 
-    void ThrowOffRail()
+    private void ThrowOffRail()
     {
         //Set onRail to false, clear the rail script, and push the player off the rail.
         //It's a little sudden, there might be a better way of doing using coroutines and looping, but this will work.
@@ -269,5 +271,27 @@ public class ControllerRailRider : MonoBehaviour
         currentRailScript = null;
         transform.position += transform.forward * 1;
         rb3d.isKinematic = false;
+    }
+
+    private void JumpOffRail()
+    {
+        // Immediately stop following spline
+        motionState = MOTIONSTATE.NotRiding;
+        currentRailScript = null;
+        rb3d.isKinematic = false;
+
+        // Restore rotation BEFORE moving
+        transform.rotation = storedRotationBeforeRail;
+
+        // Give a tiny lift to avoid re-colliding with the rail this frame
+        transform.position += Vector3.up * 0.15f;
+
+        // Apply jump impulse
+        rb3d.AddForce(((Vector3.up) * Time.deltaTime * speedJumpPower - rb3d.velocity), ForceMode.VelocityChange);
+    }
+
+    private void JumpNormally()
+    {
+        rb3d.AddForce(((Vector3.up) * Time.deltaTime * speedJumpPower - rb3d.velocity), ForceMode.VelocityChange);
     }
 }
