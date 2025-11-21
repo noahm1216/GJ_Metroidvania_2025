@@ -33,6 +33,7 @@ public class ControllerRailRider : MonoBehaviour
     public MOTIONSTATE motionState;
     public Spline splineRiding;
     private Quaternion storedRotationBeforeRail;
+    public GameObject vfxRiding;
 
 
     // input mappings
@@ -55,7 +56,11 @@ public class ControllerRailRider : MonoBehaviour
     private bool canJump;
     private bool jumpNow;
 
-    
+    private float railIgnoreTimer = 0f;
+    private float railIgnoreDuration = 0.2f; // tweak 0.15–0.3 seconds
+
+
+
 
 
     // Start is called before the first frame update
@@ -68,6 +73,10 @@ public class ControllerRailRider : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        // ignoring rail timer for jumping off
+        if (railIgnoreTimer > 0)
+            railIgnoreTimer -= Time.deltaTime;
+
         // movement input while not riding
         movementInput = new Vector3(Input.GetAxis(inputAxisHori) * (1 + sprintAmount) // X
             , Input.GetAxis(inputAxisVert), // Y
@@ -77,6 +86,7 @@ public class ControllerRailRider : MonoBehaviour
         switch (motionState)
         {
             case MOTIONSTATE.NotRiding:
+                vfxRiding.SetActive(false);
                 // direction facing
                 if (movementInput.x < 0 && !facingRight) { transform.Rotate(0, 180, 0); facingRight = true; }
                 if(movementInput.x > 0 && facingRight) { transform.Rotate(0, -180, 0); facingRight = false; }
@@ -99,10 +109,7 @@ public class ControllerRailRider : MonoBehaviour
                 break;
 
             case MOTIONSTATE.Riding:
-                // Move along the rail
-                if (splineRiding != null)
-                {
-                }
+                vfxRiding.SetActive(true);
                 break;
 
             default:
@@ -217,8 +224,8 @@ public class ControllerRailRider : MonoBehaviour
         if (((1 << col.gameObject.layer) & jumpRestoreLayers) != 0 && col.transform.position.y < transform.position.y)
         { jumpsRemaining = numberOfJump; }
 
-        // Check if collided with rail
-        if (((1 << col.gameObject.layer) & railWayLayers) != 0 && col.transform.position.y < transform.position.y)
+        // Check if collided with rail while not ignoring the rail
+        if (railIgnoreTimer <= 0 && ((1 << col.gameObject.layer) & railWayLayers) != 0 && col.transform.position.y < transform.position.y)
         {
             print("hit RAIL");            
             motionState = MOTIONSTATE.Riding;
@@ -284,8 +291,9 @@ public class ControllerRailRider : MonoBehaviour
         transform.rotation = storedRotationBeforeRail;
 
         // Give a tiny lift to avoid re-colliding with the rail this frame
-        transform.position += Vector3.up * 0.15f;
-
+        transform.position += Vector3.up * 0.25f;
+        // Prevent immediate reattachment
+        railIgnoreTimer = railIgnoreDuration;
         // Apply jump impulse
         rb3d.AddForce(((Vector3.up) * Time.deltaTime * speedJumpPower - rb3d.velocity), ForceMode.VelocityChange);
     }
