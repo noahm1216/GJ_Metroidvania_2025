@@ -95,19 +95,30 @@ public class RailMinecartFollower3D : MonoBehaviour
         }
         else
         {
-            // 4b) Airborne: ballistic motion
+            // Airborne: ballistic motion
             verticalVelocity -= gravity * Time.deltaTime;
             pos.y += verticalVelocity * Time.deltaTime;
 
-            // 5) Reconnect when falling & close to rail
             float railY = nearestWorld.y + yOffset;
-            float distToRail = Mathf.Abs(pos.y - railY);
 
-            if (verticalVelocity <= minFallSpeedToReconnect && distToRail <= reconnectDistance)
+            // ---- HARD FLOOR: never allow going below rail ----
+            // If we've fallen to or through the rail, snap and re-ground.
+            if (pos.y <= railY && verticalVelocity <= 0f)
             {
                 grounded = true;
                 verticalVelocity = 0f;
-                pos.y = railY; // snap to rail
+                pos.y = railY;
+            }
+            else
+            {
+                // (optional) your old soft reconnect can stay for "magnet" feel
+                float distToRail = Mathf.Abs(pos.y - railY);
+                if (verticalVelocity <= minFallSpeedToReconnect && distToRail <= reconnectDistance)
+                {
+                    grounded = true;
+                    verticalVelocity = 0f;
+                    pos.y = railY;
+                }
             }
         }
 
