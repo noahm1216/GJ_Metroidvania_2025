@@ -1925,6 +1925,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7ece30fe35aba964aaabe6fd14525bf6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  InputActions: {fileID: -944628639613478452, guid: e20dc028824e8974980cf1183a9c34d5, type: 3}
   currentState: 0
   moveSpeed: 5
   jumpForce: 5
