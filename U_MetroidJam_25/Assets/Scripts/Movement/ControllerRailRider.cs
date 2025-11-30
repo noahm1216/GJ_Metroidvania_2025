@@ -9,7 +9,7 @@ using UnityEngine.Splines;
 [RequireComponent(typeof(Rigidbody))]
 public class ControllerRailRider : MonoBehaviour
 {
-    public enum MOTIONSTATE { NotRiding, Riding }
+    public enum MOTIONSTATE { NotRiding, RidingRail, RidingCart, EndlessCart }
 
     // designer controlled numbers
     public float speedHorizontal = 350;
@@ -19,6 +19,7 @@ public class ControllerRailRider : MonoBehaviour
     public float speedJumpPower = 500;
     public LayerMask jumpRestoreLayers;
     private bool facingRight;
+    private Vector3 levelStartPos, lastGroundPos;
     
 
     [Header("Rail")]
@@ -39,7 +40,8 @@ public class ControllerRailRider : MonoBehaviour
     // input mappings
     private string inputAxisHori = "Horizontal",
         inputAxisVert = "Vertical",
-        inputAxisSprint = "Sprint";
+        inputAxisSprint = "Sprint",
+        inputAxisRetry = "Cancel";
         //inputAxisAbility = "Jump";
 
     // movement calculation data
@@ -68,6 +70,7 @@ public class ControllerRailRider : MonoBehaviour
     {
         rb3d = GetComponent<Rigidbody>();
         jumpsRemaining = numberOfJump;
+        UpdateStartPos(transform.position);
     }
 
     // Update is called once per frame
@@ -82,6 +85,8 @@ public class ControllerRailRider : MonoBehaviour
             , Input.GetAxis(inputAxisVert), // Y
             0); // Z
 
+        if (Mathf.Abs(Input.GetAxis(inputAxisRetry)) > deadzone) ResetPlayerPos(true);
+
 
         switch (motionState)
         {
@@ -89,7 +94,7 @@ public class ControllerRailRider : MonoBehaviour
                 vfxRiding.SetActive(false);
                 // direction facing
                 if (movementInput.x < 0 && !facingRight) { transform.Rotate(0, 180, 0); facingRight = true; }
-                if(movementInput.x > 0 && facingRight) { transform.Rotate(0, -180, 0); facingRight = false; }
+                if (movementInput.x > 0 && facingRight) { transform.Rotate(0, -180, 0); facingRight = false; }
                 // Sprint logic
                 if (Mathf.Abs(Input.GetAxis(inputAxisSprint)) > deadzone)
                 {
@@ -107,11 +112,13 @@ public class ControllerRailRider : MonoBehaviour
                     sprintAmount = 0;
                 }
                 break;
-
-            case MOTIONSTATE.Riding:
+            case MOTIONSTATE.RidingRail:
                 vfxRiding.SetActive(true);
                 break;
-
+            case MOTIONSTATE.RidingCart:
+                break;
+            case MOTIONSTATE.EndlessCart:
+                break;
             default:
                 break;
         }
@@ -130,22 +137,30 @@ public class ControllerRailRider : MonoBehaviour
     {
         movementInput *= Time.deltaTime; // Normalize input against framerate
 
-        if (motionState == MOTIONSTATE.NotRiding)
+        switch (motionState)
         {
-            rb3d.velocity = new Vector3(movementInput.x * speedHorizontal,  // X velocity
-                rb3d.velocity.y,  // Keep Y velocity the same
-                0);  // Z velocity
+            case MOTIONSTATE.NotRiding:
+                rb3d.velocity = new Vector3(movementInput.x * speedHorizontal,  // X velocity
+               rb3d.velocity.y,  // Keep Y velocity the same
+               0);  // Z velocity
+                break;
+            case MOTIONSTATE.RidingRail:
+                MovePlayerAlongRail();
+                break;
+            case MOTIONSTATE.RidingCart:
+                break;
+            case MOTIONSTATE.EndlessCart:
+                break;
+            default:
+                break;
         }
-        else
-        {
-            MovePlayerAlongRail();
-        }
+
 
         if (jumpNow)
         {
             jumpNow = false;
 
-            if (motionState == MOTIONSTATE.Riding)
+            if (motionState == MOTIONSTATE.RidingRail)
                 JumpOffRail();
             else
                 JumpNormally();
@@ -155,7 +170,7 @@ public class ControllerRailRider : MonoBehaviour
 
     void MovePlayerAlongRail()
     {
-        if (currentRailScript != null && motionState == MOTIONSTATE.Riding) //This is just some additional error checking.
+        if (currentRailScript != null && motionState == MOTIONSTATE.RidingRail) //This is just some additional error checking.
         {
             //Calculate a 0 to 1 normalised time value which is the progress along the rail.
             //Elapsed time divided by the full time needed to traverse the spline will give you that value.
@@ -222,13 +237,16 @@ public class ControllerRailRider : MonoBehaviour
     {
         // Reset jumps if collision with appropriate layer
         if (((1 << col.gameObject.layer) & jumpRestoreLayers) != 0 && col.transform.position.y < transform.position.y)
-        { jumpsRemaining = numberOfJump; }
+        {
+            jumpsRemaining = numberOfJump; // also dont store last pos if we touched a rail
+            if (((1 << col.gameObject.layer) & railWayLayers) == 0) lastGroundPos = transform.position;
+        }
 
         // Check if collided with rail while not ignoring the rail
         if (railIgnoreTimer <= 0 && ((1 << col.gameObject.layer) & railWayLayers) != 0 && col.transform.position.y < transform.position.y)
         {
             print("hit RAIL");            
-            motionState = MOTIONSTATE.Riding;
+            motionState = MOTIONSTATE.RidingRail;
             storedRotationBeforeRail = transform.rotation;
 
             // Get SplineContainer and retrieve the spline
@@ -301,5 +319,16 @@ public class ControllerRailRider : MonoBehaviour
     private void JumpNormally()
     {
         rb3d.AddForce(((Vector3.up) * Time.deltaTime * speedJumpPower - rb3d.velocity), ForceMode.VelocityChange);
+    }
+
+    public void ResetPlayerPos(bool _toLastPos)
+    {
+        if (_toLastPos) transform.position = lastGroundPos;
+        else transform.position = levelStartPos;
+    }
+
+    public void UpdateStartPos(Vector3 _newPos)
+    {
+        levelStartPos = _newPos;
     }
 }
