@@ -3,13 +3,16 @@ using System.Collections.Generic;
 using Unity.VisualScripting;
 using UnityEngine;
 
+
 public enum CartState
 {
     idle,normal,drill
 }
 public class CartBrain : MonoBehaviour
 {
-   public CartState currentState = CartState.idle;
+    
+
+    public CartState currentState = CartState.idle;
     public GameObject drill;
     public BlockMover blockMover;
     private bool canDrive = false;
@@ -48,7 +51,8 @@ public class CartBrain : MonoBehaviour
     {
         if (canDrive)
         {
-            blockMover.Controls();
+            blockMover.OnMove();
+
         }
     }
 

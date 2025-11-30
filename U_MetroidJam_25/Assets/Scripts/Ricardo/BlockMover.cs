@@ -1,11 +1,24 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 public class BlockMover : MonoBehaviour
 {
+
+    public InputActionAsset InputActions;
+    private InputAction moveAction;
+    private Vector2 moveAmount;
+    
+
     private Rigidbody rb;
     public float speed;
+    public float acceleration;
+
+    private void Awake()
+    {
+        moveAction = InputSystem.actions.FindAction("Move");
+    }
 
     // Start is called before the first frame update
     void Start()
@@ -13,6 +26,17 @@ public class BlockMover : MonoBehaviour
         rb = GetComponent<Rigidbody>();//Gets reference to the rigidbody
     }
 
+    private void OnEnable()
+    {
+        //Enable action map for cart
+        InputActions.FindActionMap("Cart").Enable();
+    }
+
+    private void OnDisable()
+    {
+        //Disable action map for cart
+        InputActions.FindActionMap("Cart").Disable();
+    }
 
     void Move(float input = 0)
     {
@@ -20,16 +44,12 @@ public class BlockMover : MonoBehaviour
         rb.AddForce(_move, ForceMode.Force);
     }
 
-    public void Controls()
+    public void OnMove()
     {
-        if (Input.GetKey(KeyCode.RightArrow))
-        {
-            Move(1);
-        }
 
-        if (Input.GetKey(KeyCode.LeftArrow))
-        {
-            Move(-1);
-        }
+        moveAmount = moveAction.ReadValue<Vector2>();
+        Vector2 mvmt = new Vector2(moveAmount.x * speed, 0);
+        Vector3 currentVel = rb.velocity;
+        rb.velocity = Vector2.Lerp(currentVel, mvmt, acceleration * Time.deltaTime);
     }
 }

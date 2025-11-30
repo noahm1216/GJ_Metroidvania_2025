@@ -804,9 +804,9 @@ GameObject:
   - component: {fileID: 803317692}
   - component: {fileID: 803317691}
   - component: {fileID: 803317690}
-  - component: {fileID: 803317688}
   - component: {fileID: 803317694}
   - component: {fileID: 803317695}
+  - component: {fileID: 803317696}
   m_Layer: 0
   m_Name: Cart
   m_TagString: Cart
@@ -814,19 +814,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &803317688
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 803317687}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 561eb84ed06c81348a6b943ebb799674, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  speed: 50
 --- !u!65 &803317690
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -926,9 +913,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c07904f504adfc7478b8c5f1e26ccc47, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  currentState: 0
+  currentState: 1
   drill: {fileID: 64831557}
-  blockMover: {fileID: 803317688}
+  blockMover: {fileID: 803317696}
 --- !u!54 &803317695
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -956,6 +943,21 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 124
   m_CollisionDetection: 0
+--- !u!114 &803317696
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 803317687}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 561eb84ed06c81348a6b943ebb799674, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  InputActions: {fileID: -944628639613478452, guid: e20dc028824e8974980cf1183a9c34d5, type: 3}
+  speed: 20
+  acceleration: 5
 --- !u!1 &908584875
 GameObject:
   m_ObjectHideFlags: 0
@@ -1824,7 +1826,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!136 &1193071924
 CapsuleCollider:
   m_ObjectHideFlags: 0
@@ -1925,7 +1927,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7ece30fe35aba964aaabe6fd14525bf6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  InputActions: {fileID: -944628639613478452, guid: e20dc028824e8974980cf1183a9c34d5, type: 3}
   currentState: 0
   moveSpeed: 5
   jumpForce: 5
