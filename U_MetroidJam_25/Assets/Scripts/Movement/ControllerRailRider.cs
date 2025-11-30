@@ -20,9 +20,18 @@ public class ControllerRailRider : MonoBehaviour
     public LayerMask jumpRestoreLayers;
     private bool facingRight;
     private Vector3 levelStartPos, lastGroundPos;
+
+    [Header("Cart Riding")]
+    public LayerMask cartRailsMask;
+    public Transform cartObj;
+    private Rigidbody cartRb3d;
+    private string cartTag = "Cart";
+    private bool inCart;
+    private bool cartTouchingRails;
     
 
-    [Header("Rail")]
+
+    [Header("Rail Riding")]
     public LayerMask railWayLayers;
     [SerializeField] Rail currentRailScript;
     public float railAcceleration = 2f;  // Optional acceleration along the rail
@@ -60,8 +69,6 @@ public class ControllerRailRider : MonoBehaviour
 
     private float railIgnoreTimer = 0f;
     private float railIgnoreDuration = 0.2f; // tweak 0.15–0.3 seconds
-
-
 
 
 
@@ -155,17 +162,30 @@ public class ControllerRailRider : MonoBehaviour
                 break;
         }
 
-
         if (jumpNow)
         {
             jumpNow = false;
 
             if (motionState == MOTIONSTATE.RidingRail)
                 JumpOffRail();
+            else if (motionState == MOTIONSTATE.RidingCart)
+            { ChangeMotion(MOTIONSTATE.NotRiding); CartData(null, false, null); JumpNormally();}
             else
                 JumpNormally();
         }
 
+    }
+
+    private void CartData(Transform _cartObj, bool _inCart, Transform _newParent)
+    {
+        if (_cartObj) { cartObj = _cartObj; cartObj.TryGetComponent(out cartRb3d); }
+        if (cartObj) { inCart = _inCart; cartObj.SetParent(_newParent); }
+        if (cartRb3d) { if (_inCart) cartRb3d.isKinematic = true; else cartRb3d.isKinematic = false; }
+    }
+
+    public void ChangeMotion(MOTIONSTATE _newState)
+    {
+        motionState = _newState;
     }
 
     void MovePlayerAlongRail()
@@ -235,6 +255,9 @@ public class ControllerRailRider : MonoBehaviour
 
     private void OnCollisionEnter(Collision col)
     {
+        if(col.transform.tag == cartTag) // reference the cart data
+            CartData(col.transform, (Mathf.Abs(transform.position.x - col.transform.position.x) < 1.4f), transform);
+
         // Reset jumps if collision with appropriate layer
         if (((1 << col.gameObject.layer) & jumpRestoreLayers) != 0 && col.transform.position.y < transform.position.y)
         {
@@ -242,21 +265,34 @@ public class ControllerRailRider : MonoBehaviour
             if (((1 << col.gameObject.layer) & railWayLayers) == 0) lastGroundPos = transform.position;
         }
 
-        // Check if collided with rail while not ignoring the rail
-        if (railIgnoreTimer <= 0 && ((1 << col.gameObject.layer) & railWayLayers) != 0 && col.transform.position.y < transform.position.y)
+        if (motionState == MOTIONSTATE.RidingRail || motionState == MOTIONSTATE.NotRiding) // if we are walking or riding a rail
         {
-            print("hit RAIL");            
-            motionState = MOTIONSTATE.RidingRail;
-            storedRotationBeforeRail = transform.rotation;
-
-            // Get SplineContainer and retrieve the spline
-            SplineContainer splineContainer = col.transform.GetComponent<SplineContainer>();
-            if (splineContainer)
+            // Check if collided with rail while not ignoring the rail
+            if (railIgnoreTimer <= 0 && ((1 << col.gameObject.layer) & railWayLayers) != 0 && col.transform.position.y < transform.position.y)
             {
-                currentRailScript = col.transform.GetComponent<Rail>();
-                splineRiding = splineContainer.Spline;
-                CalculateAndSetRailPosition();
-                rb3d.isKinematic = true;
+                print("hit RAIL");
+                ChangeMotion(MOTIONSTATE.RidingRail);
+                storedRotationBeforeRail = transform.rotation;
+
+                // Get SplineContainer and retrieve the spline
+                SplineContainer splineContainer = col.transform.GetComponent<SplineContainer>();
+                if (splineContainer)
+                {
+                    currentRailScript = col.transform.GetComponent<Rail>();
+                    splineRiding = splineContainer.Spline;
+                    CalculateAndSetRailPosition();
+                    rb3d.isKinematic = true;
+                }
+            }
+        }
+        else // if we are in the mining cart or on the endless cart ride
+        {
+            // if we are touching the cartRails (and hopefully inside 1.8m range)
+            if (((1 << col.gameObject.layer) & cartRailsMask) != 0 && inCart)
+            {
+                jumpsRemaining = numberOfJump; // also dont store last pos if we touched a rail
+                cartTouchingRails = true;
+                ChangeMotion(MOTIONSTATE.RidingCart);
             }
         }
     }
@@ -291,7 +327,7 @@ public class ControllerRailRider : MonoBehaviour
     {
         //Set onRail to false, clear the rail script, and push the player off the rail.
         //It's a little sudden, there might be a better way of doing using coroutines and looping, but this will work.
-        motionState = MOTIONSTATE.NotRiding;
+        ChangeMotion(MOTIONSTATE.NotRiding);
         transform.rotation = storedRotationBeforeRail;
         currentRailScript = null;
         transform.position += transform.forward * 1;
@@ -301,7 +337,7 @@ public class ControllerRailRider : MonoBehaviour
     private void JumpOffRail()
     {
         // Immediately stop following spline
-        motionState = MOTIONSTATE.NotRiding;
+        ChangeMotion(MOTIONSTATE.NotRiding);
         currentRailScript = null;
         rb3d.isKinematic = false;
 
