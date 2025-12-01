@@ -7,6 +7,13 @@ using UnityEngine.Splines;
 
 public class CartController : MonoBehaviour
 {
+    //Simple enum based state machine
+    public enum CartState
+    {
+        idle, controlled
+    }
+
+    public CartState state;
     public SplineContainer cartSpline;
     public float maxSpeed = 10f;
     public float accel = 5f;
@@ -23,6 +30,13 @@ public class CartController : MonoBehaviour
         moveAction = InputActions.FindActionMap("Cart").FindAction("Move");
     }
 
+    private void Start()
+    {
+        
+        cartSpline.Spline.Evaluate(0, out var localPos, out var localDir, out var localUp);
+        Debug.Log("Up vector: " + localUp + "\ndirection vector:  " + localDir);
+    }
+
     private void OnEnable()
     {
         InputActions.FindActionMap("Cart").Enable();
@@ -35,7 +49,12 @@ public class CartController : MonoBehaviour
 
     void Update()
     {
-        UpdateSplinePos();
+        switch (state)
+        {
+            case CartState.idle: break; //Does nothing
+            case CartState.controlled: UpdateSplinePos(); break; //Player Controlled state
+            default: state = CartState.idle; break; //Default state is idle
+        }
     }
 
     void UpdateSplinePos()
@@ -52,7 +71,12 @@ public class CartController : MonoBehaviour
         Vector3 worldDir = cartSpline.transform.TransformDirection(localDir);
         Vector3 worldUp = cartSpline.transform.TransformDirection(localUp);
 
-        transform.SetPositionAndRotation(worldPos, Quaternion.LookRotation(worldDir, worldUp));
+        Quaternion splineRot = Quaternion.LookRotation(worldDir, Vector3.up);
+
+        // If your cart’s forward axis is +X instead of +Z:
+        Quaternion offset = Quaternion.Euler(0f, -90f, 0f);
+
+        transform.SetPositionAndRotation(worldPos, splineRot * offset);
     }
 
     float GetMoveSpeed()
@@ -64,6 +88,13 @@ public class CartController : MonoBehaviour
         currentSpeed = Mathf.MoveTowards(currentSpeed, targetSpeed, accel * Time.deltaTime);
 
         return currentSpeed;
+    }
+
+
+    public void ChangeState(CartState _state)
+    {
+        state = _state;
+        Debug.Log("Current State: " + state.ToString());
     }
 }
 

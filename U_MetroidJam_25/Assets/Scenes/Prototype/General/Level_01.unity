@@ -1783,6 +1783,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1015738311}
   - component: {fileID: 1015738312}
+  - component: {fileID: 1015738313}
   m_Layer: 7
   m_Name: Cart (1)
   m_TagString: Cart
@@ -1833,6 +1834,23 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 56
   m_CollisionDetection: 0
+--- !u!114 &1015738313
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1015738310}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c8c672b5090ddb94dac5a4a299845b2f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  state: 0
+  cartSpline: {fileID: 555751492}
+  maxSpeed: 10
+  accel: 5
+  InputActions: {fileID: -944628639613478452, guid: e20dc028824e8974980cf1183a9c34d5, type: 3}
 --- !u!1 &1029777801
 GameObject:
   m_ObjectHideFlags: 0
