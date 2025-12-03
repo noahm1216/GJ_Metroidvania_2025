@@ -6,7 +6,11 @@ public class RailMinecartFollower3D : MonoBehaviour
 {
     [Header("Forward Movement")]
     public float speed = 5f;
+    public float slowFactor = .75f;
+    private float currentSpeed;
     public Vector3 direction = Vector3.right;
+
+    public GameObject sparks;
 
     [Header("Rail Follow (Y only while grounded)")]
     public SplineContainer rail;
@@ -14,7 +18,7 @@ public class RailMinecartFollower3D : MonoBehaviour
     public float yFollowLerp = 20f;
     public float zLock = 0f;
 
-    [Header("Jump")]
+    [Header("Jump / Gravity")]
     public float jumpVelocity = 8f;
     public float gravity = 25f;
     public float reconnectDistance = 0.5f;
@@ -28,21 +32,40 @@ public class RailMinecartFollower3D : MonoBehaviour
     public Transform rotateTarget;   // drag your cart mesh / visuals here
     public float rotationLerp = 20f; // 0 = instant, higher = smoother
 
+    [Header("Gap Info")]
+    [Tooltip("Reference to the runtime rail generator so we know where the gaps are.")]
+    public RuntimeRailSplineGenerator railGenerator;
+
     bool grounded = true;
     float verticalVelocity = 0f;
-
-    // track when we just reconnected so we can soften that landing a bit
     bool justReconnected = false;
+
+    void Start()
+    {
+        currentSpeed = speed;
+    }
 
     void Update()
     {
-        // 1) Always move forward
-        transform.position += direction.normalized * speed * Time.deltaTime;
+
+        if (Input.GetKeyDown(KeyCode.LeftShift))
+        {
+            currentSpeed = speed * slowFactor;
+            sparks.SetActive(true);
+        }
+
+        if (Input.GetKeyUp(KeyCode.LeftShift))
+        {
+            currentSpeed = speed;
+            sparks.SetActive(false);
+        }
+        // 1) Always move forward in X
+        transform.position += direction.normalized * currentSpeed * Time.deltaTime;
 
         if (rail == null || rail.Splines.Count == 0)
             return;
 
-        // 2) Find nearest point on ANY spline in the container (smooth chunk transitions)
+        // 2) Nearest point on ANY spline in the container (smooth chunk transitions)
         float3 localPos = (float3)rail.transform.InverseTransformPoint(transform.position);
 
         float3 nearestWorld = (float3)transform.position;
@@ -76,10 +99,26 @@ public class RailMinecartFollower3D : MonoBehaviour
             }
         }
 
-        // ---------- Rotation (still only while grounded) ----------
+        // 3) Check if our X is currently inside a gap (rail-independent of slope)
+        bool inGap = false;
+        if (railGenerator != null)
+        {
+            float x = transform.position.x;
+            var gaps = railGenerator.Gaps;
+            for (int i = 0; i < gaps.Count; i++)
+            {
+                Vector2 g = gaps[i];
+                if (x >= g.x && x <= g.y)
+                {
+                    inGap = true;
+                    break;
+                }
+            }
+        }
+
+        // ---------- Rotation (only while grounded) ----------
         if (rotateTarget != null && grounded)
         {
-            // Approximate tangent along the spline near nearestT on the chosen spline
             Vector3 tangent = direction; // fallback
 
             if (nearestSplineIndex >= 0)
@@ -101,10 +140,7 @@ public class RailMinecartFollower3D : MonoBehaviour
                 tangent = ((Vector3)tanW).normalized;
             }
 
-            // Slope angle in the X/Y plane
             float angle = Mathf.Atan2(tangent.y, tangent.x) * Mathf.Rad2Deg;
-
-            // Tilt in 2D plane (around Z)
             Quaternion targetRot = Quaternion.Euler(0f, 0f, angle);
 
             if (rotationLerp <= 0f)
@@ -122,7 +158,7 @@ public class RailMinecartFollower3D : MonoBehaviour
         }
         // -------------------------------------------------------
 
-        // 3) Handle jump input
+        // 4) Jump input (only while grounded)
         if (grounded && Input.GetButtonDown("Jump"))
         {
             grounded = false;
@@ -135,47 +171,61 @@ public class RailMinecartFollower3D : MonoBehaviour
 
         if (grounded)
         {
-            // 4a) Grounded: follow spline Y (with extra smoothing right after landing)
-            float targetY = railY;
-
-            float effectiveLerp = justReconnected ? landingLerp : yFollowLerp;
-            if (effectiveLerp <= 0f)
+            if (inGap)
             {
-                pos.y = targetY;
+                // We just stepped into a gap: start falling IMMEDIATELY this frame
+                grounded = false;
                 justReconnected = false;
+
+                // Start the fall (first gravity step)
+                // If you want a tiny "coyote time", you could skip this first step.
+                verticalVelocity -= gravity * Time.deltaTime;
+                pos.y += verticalVelocity * Time.deltaTime;
             }
             else
             {
-                pos.y = Mathf.Lerp(
-                    pos.y,
-                    targetY,
-                    1f - Mathf.Exp(-effectiveLerp * Time.deltaTime)
-                );
+                // Grounded and on rail: follow spline Y (with landing smoothing if we just reconnected)
+                float targetY = railY;
+                float effectiveLerp = justReconnected ? landingLerp : yFollowLerp;
 
-                // once very close, snap and clear the landing flag
-                if (Mathf.Abs(pos.y - targetY) < 0.01f)
+                if (effectiveLerp <= 0f)
                 {
                     pos.y = targetY;
                     justReconnected = false;
                 }
+                else
+                {
+                    pos.y = Mathf.Lerp(
+                        pos.y,
+                        targetY,
+                        1f - Mathf.Exp(-effectiveLerp * Time.deltaTime)
+                    );
+
+                    if (Mathf.Abs(pos.y - targetY) < 0.01f)
+                    {
+                        pos.y = targetY;
+                        justReconnected = false;
+                    }
+                }
             }
         }
-        else
+
+        // Airborne motion (either jumped, fell off a gap, or are mid-fall)
+        if (!grounded)
         {
-            // 4b) Airborne: ballistic motion
             verticalVelocity -= gravity * Time.deltaTime;
             pos.y += verticalVelocity * Time.deltaTime;
 
-            // 5) Reconnect when falling & close to rail
-            float distToRail = Mathf.Abs(pos.y - railY);
-
-            if (verticalVelocity <= minFallSpeedToReconnect && distToRail <= reconnectDistance)
+            // Try to reconnect if we're falling and close to rail (outside of gap)
+            if (!inGap)
             {
-                grounded = true;
-                verticalVelocity = 0f;
-
-                // Don't hard snap; let grounded logic blend us down to the rail
-                justReconnected = true;
+                float distToRail = Mathf.Abs(pos.y - railY);
+                if (verticalVelocity <= minFallSpeedToReconnect && distToRail <= reconnectDistance)
+                {
+                    grounded = true;
+                    verticalVelocity = 0f;
+                    justReconnected = true; // grounded branch will smooth us onto the rail
+                }
             }
         }
 
