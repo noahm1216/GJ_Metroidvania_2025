@@ -30,19 +30,43 @@ public class RuntimeRailSplineGenerator : MonoBehaviour
     public int seed = 12345;
     public bool regenerateOnStart = true;
 
-    private Spline spline;
-    private readonly Queue<float> knotWorldXs = new Queue<float>();
+    [Header("Gaps")]
+    [Tooltip("Random distance of rail between gaps (world units).")]
+    public Vector2 railLengthRange = new Vector2(40f, 80f);
+
+    [Tooltip("Random length of a gap (world units).")]
+    public Vector2 gapLengthRange = new Vector2(8f, 16f);
+
+    private readonly List<Vector2> gaps = new List<Vector2>();
+    public IReadOnlyList<Vector2> Gaps => gaps;
+
+    public SplineInstantiate splineInstantiator;
+
+    // Represents one continuous rail section (one spline) in the container
+    private class RailChunk
+    {
+        public Spline spline;
+        public float minX = float.PositiveInfinity;
+        public float maxX = float.NegativeInfinity;
+    }
+
+    private readonly List<RailChunk> chunks = new List<RailChunk>();
+    private RailChunk currentChunk;
+
     private float nextSpawnX;
     private float lastHeight;
-
     private bool isRegenerating;
+
+    // Gap state
+    private bool inGap;
+    private float gapEndX;
+    private float nextGapStartX;
+    private System.Random rng;
 
     void Awake()
     {
         if (container == null) container = GetComponent<SplineContainer>();
-
-        // Grab the spline reference once. (SplineContainer.Spline is the first spline.)
-        spline = container.Spline;
+        rng = new System.Random(seed);
 
         if (regenerateOnStart && player != null)
             RegenerateFromPlayer();
@@ -50,37 +74,52 @@ public class RuntimeRailSplineGenerator : MonoBehaviour
 
     void Update()
     {
-        if (player == null || spline == null) return;
+        if (player == null || container == null) return;
 
         float playerX = player.position.x;
 
-        // Add knots ahead
-        float targetAheadX = playerX + lookAheadDistance;
+        // 👉 Extend how far ahead we generate by the max possible gap length
+        float maxGapLength = Mathf.Max(gapLengthRange.x, gapLengthRange.y);
+        float targetAheadX = playerX + lookAheadDistance + maxGapLength;
+
+        // Add knots ahead (pushing through gaps + beyond)
         while (nextSpawnX < targetAheadX)
             AddKnot();
 
-        // Remove knots behind
+        // Remove whole chunks (splines) that are fully behind the keep distance
         float minKeepX = playerX - keepBehindDistance;
-        while (knotWorldXs.Count > 0 && knotWorldXs.Peek() < minKeepX)
-            RemoveOldestKnot();
+        RemoveChunksBehind(minKeepX);
     }
 
     [ContextMenu("Regenerate From Player")]
     public void RegenerateFromPlayer()
     {
-        if (isRegenerating || player == null || spline == null) return;
+        if (isRegenerating || player == null || container == null) return;
         isRegenerating = true;
 
-        spline.Clear();
-        knotWorldXs.Clear();
+        // Clear all splines in the container
+        container.Splines = System.Array.Empty<Spline>();
+
+        chunks.Clear();
+        currentChunk = null;
 
         float startX = player.position.x - keepBehindDistance;
         nextSpawnX = startX;
 
         lastHeight = SampleHeight(nextSpawnX);
 
-        int knotCount = Mathf.CeilToInt((keepBehindDistance + lookAheadDistance) / knotSpacing) + 2;
-        for (int i = 0; i < knotCount; i++)
+        // Reset gap state
+        inGap = false;
+        ScheduleNextGap(startX);
+
+        // Make the first rail chunk
+        CreateNewChunk();
+
+        // 👉 Use the same "ahead + max gap" logic for initial fill
+        float maxGapLength = Mathf.Max(gapLengthRange.x, gapLengthRange.y);
+        float initialAheadX = player.position.x + lookAheadDistance + maxGapLength;
+
+        while (nextSpawnX < initialAheadX)
             AddKnot();
 
         isRegenerating = false;
@@ -89,8 +128,50 @@ public class RuntimeRailSplineGenerator : MonoBehaviour
     private void AddKnot()
     {
         float x = nextSpawnX;
-        float rawHeight = SampleHeight(x);
 
+        // ----- GAP LOGIC -----
+
+        // If we're not in a gap yet and we've reached the planned gap start, enter a gap.
+        if (!inGap && x >= nextGapStartX)
+        {
+            inGap = true;
+            float gapLength = RandomRange(gapLengthRange);
+            gapEndX = x + gapLength;
+
+            // (optional) record gap range if you ever want it
+            gaps.Add(new Vector2(x, gapEndX));
+        }
+
+        // While in a gap, skip adding knots until we move past gapEndX.
+        if (inGap)
+        {
+            if (x < gapEndX)
+            {
+                // Still inside gap: advance X but don't create a knot or spline.
+                nextSpawnX += knotSpacing;
+                return;
+            }
+            else
+            {
+                // Just exited the gap.
+                inGap = false;
+                ScheduleNextGap(x);
+
+                // Start a new spline for the next rail chunk
+                CreateNewChunk();
+
+                // Reset smoothing baseline so the slope isn't insane
+                lastHeight = SampleHeight(x);
+            }
+        }
+
+        // Ensure we have a current chunk (spline) to write into
+        if (currentChunk == null)
+            CreateNewChunk();
+
+        // ----- NORMAL KNOT CREATION -----
+
+        float rawHeight = SampleHeight(x);
         float h = Mathf.Lerp(lastHeight, rawHeight, 1f - heightLerp);
         lastHeight = h;
 
@@ -102,17 +183,52 @@ public class RuntimeRailSplineGenerator : MonoBehaviour
             Rotation = quaternion.identity
         };
 
-        spline.Add(knot);
-        knotWorldXs.Enqueue(x);
+        currentChunk.spline.Add(knot);
+
+        // Track extents for chunk trimming
+        if (x < currentChunk.minX) currentChunk.minX = x;
+        if (x > currentChunk.maxX) currentChunk.maxX = x;
 
         nextSpawnX += knotSpacing;
     }
 
-    private void RemoveOldestKnot()
+    // Remove entire rail chunks that are fully behind minKeepX
+    private void RemoveChunksBehind(float minKeepX)
     {
-        if (spline.Count == 0 || knotWorldXs.Count == 0) return;
-        spline.RemoveAt(0);
-        knotWorldXs.Dequeue();
+        if (chunks.Count == 0) return;
+
+        // Work on a temporary list of splines we can modify
+        var splineList = new List<Spline>(container.Splines);
+
+        int i = 0;
+        while (i < chunks.Count)
+        {
+            var chunk = chunks[i];
+
+            // If this chunk's max X is still behind the keep zone, remove it.
+            if (chunk.maxX < minKeepX)
+            {
+                int splineIndex = splineList.IndexOf(chunk.spline);
+                if (splineIndex >= 0)
+                    splineList.RemoveAt(splineIndex);
+
+                if (chunk == currentChunk)
+                    currentChunk = null;
+
+                chunks.RemoveAt(i);
+                // don't increment i; list shrank
+            }
+            else
+            {
+                i++;
+            }
+        }
+
+        container.Splines = splineList.ToArray();
+
+        // If we removed currentChunk and there are still chunks, pick the last one as current
+        if (currentChunk == null && chunks.Count > 0)
+            currentChunk = chunks[chunks.Count - 1];
     }
 
     private float SampleHeight(float worldX)
@@ -129,5 +245,40 @@ public class RuntimeRailSplineGenerator : MonoBehaviour
         }
 
         return height;
+    }
+
+    // ----- GAP HELPERS -----
+
+    private void ScheduleNextGap(float fromX)
+    {
+        float railLength = RandomRange(railLengthRange);
+        nextGapStartX = fromX + railLength;
+    }
+
+    private float RandomRange(Vector2 range)
+    {
+        if (range.y <= range.x) return range.x;
+        double t = rng.NextDouble();
+        return (float)(range.x + t * (range.y - range.x));
+    }
+
+    private void CreateNewChunk()
+    {
+        // Get current splines as a mutable list
+        var splineList = new List<Spline>(container.Splines);
+
+        var newSpline = new Spline();
+        splineList.Add(newSpline);
+        container.Splines = splineList.ToArray();
+
+        currentChunk = new RailChunk
+        {
+            spline = newSpline
+        };
+
+        chunks.Add(currentChunk);
+
+        if (splineInstantiator != null)
+            splineInstantiator.UpdateInstances();
     }
 }

@@ -216,19 +216,7 @@ MonoBehaviour:
       m_Data: []
     m_ObjectData:
       m_Data: []
-  m_Splines:
-  - m_EditModeType: 1
-    m_Knots: []
-    m_MetaData: []
-    m_Closed: 0
-    m_IntData:
-      m_Data: []
-    m_FloatData:
-      m_Data: []
-    m_Float4Data:
-      m_Data: []
-    m_ObjectData:
-      m_Data: []
+  m_Splines: []
   m_Knots:
     m_KnotsLink: []
 --- !u!4 &249363242
@@ -260,18 +248,21 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   player: {fileID: 1445501353}
   container: {fileID: 249363241}
-  knotSpacing: 2
-  lookAheadDistance: 60
+  knotSpacing: 1
+  lookAheadDistance: 150
   keepBehindDistance: 20
   baseHeight: 0
-  amplitude: 6
+  amplitude: 3
   noiseScale: 0.08
   heightLerp: 0.25
   useSine: 0
-  sineAmplitude: 2
+  sineAmplitude: 1.5
   sineWavelength: 30
   seed: 12345
   regenerateOnStart: 1
+  railLengthRange: {x: 30, y: 75}
+  gapLengthRange: {x: 8, y: 15}
+  splineInstantiator: {fileID: 249363240}
 --- !u!1 &392238504
 GameObject:
   m_ObjectHideFlags: 0
@@ -824,6 +815,50 @@ MonoBehaviour:
     m_MipBias: 0
     m_VarianceClampScale: 0.9
     m_ContrastAdaptiveSharpening: 0
+--- !u!1 &1293983350
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1293983351}
+  - component: {fileID: 1293983352}
+  m_Layer: 0
+  m_Name: Rock Spawner
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1293983351
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1293983350}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 15.5, y: 20, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1445501353}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1293983352
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1293983350}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ed5845888091ea14f8811f1bba623c91, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &1445501349
 GameObject:
   m_ObjectHideFlags: 0
@@ -887,6 +922,7 @@ Transform:
   m_Children:
   - {fileID: 963194228}
   - {fileID: 557984458}
+  - {fileID: 1293983351}
   - {fileID: 392238505}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -912,6 +948,7 @@ MonoBehaviour:
   gravity: 25
   reconnectDistance: 0.1
   minFallSpeedToReconnect: -0.1
+  landingLerp: 30
   rotateTarget: {fileID: 392238505}
   rotationLerp: 28
 --- !u!1001 &1876309244
@@ -984,6 +1021,37 @@ GameObject:
   m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: ef1c58848ff55da4785a6336482d8cd5, type: 3}
   m_PrefabInstance: {fileID: 1876309244}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &2066439428
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2066439429}
+  m_Layer: 0
+  m_Name: GameObject
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2066439429
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2066439428}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 303.00797, y: -9.367907, z: 64.08813}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
@@ -992,3 +1060,4 @@ SceneRoots:
   - {fileID: 249363242}
   - {fileID: 1876309244}
   - {fileID: 1445501353}
+  - {fileID: 2066439429}
