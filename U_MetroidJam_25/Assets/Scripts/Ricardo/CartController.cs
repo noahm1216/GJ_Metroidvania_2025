@@ -7,23 +7,22 @@ using UnityEngine.Splines;
 
 public class CartController : MonoBehaviour
 {
-    //Simple enum based state machine
-    public enum CartState
-    {
-        idle, controlled
-    }
+    // Simple enum-based state machine
+    public enum CartState { Idle, Controlled }
+    public CartState state = CartState.Idle;
 
-    public CartState state;
+    [Header("Spline Settings")]
     public SplineContainer cartSpline;
     public float maxSpeed = 10f;
     public float accel = 5f;
 
-    private float currentPos;
-    private float currentSpeed = 0f;
-
+    [Header("Input Settings")]
     public InputActionAsset InputActions;
     private InputAction moveAction;
     private Vector2 moveAmount;
+
+    private float currentPos;       // distance along spline
+    private float currentSpeed = 0f;
 
     private void Awake()
     {
@@ -32,9 +31,9 @@ public class CartController : MonoBehaviour
 
     private void Start()
     {
-        
-        cartSpline.Spline.Evaluate(0, out var localPos, out var localDir, out var localUp);
-        Debug.Log("Up vector: " + localUp + "\ndirection vector:  " + localDir);
+        // Initialize cart position at closest spline point to its starting transform
+        currentPos = FindClosestSplinePos(transform.position, 200);
+        Debug.Log($"Cart initialized at spline distance {currentPos}");
     }
 
     private void OnEnable()
@@ -47,35 +46,40 @@ public class CartController : MonoBehaviour
         InputActions.FindActionMap("Cart").Disable();
     }
 
-    void Update()
+    private void Update()
     {
         switch (state)
         {
-            case CartState.idle: break; //Does nothing
-            case CartState.controlled: UpdateSplinePos(); break; //Player Controlled state
-            default: state = CartState.idle; break; //Default state is idle
+            case CartState.Idle:
+                break; // Does nothing
+            case CartState.Controlled:
+                UpdateSplinePos();
+                break;
+            default:
+                state = CartState.Idle;
+                break;
         }
     }
 
     void UpdateSplinePos()
     {
-        float splineLength = cartSpline.Spline.GetLength();
-        float speed = GetMoveSpeed();
+        float splineLength = cartSpline.Spline.GetLength(); //Get spline length
+        float speed = GetMoveSpeed(); //Gets speed of cart
 
-        currentPos = Mathf.Clamp(currentPos + speed * Time.deltaTime, 0f, splineLength);
-        float normalizedPos = currentPos / splineLength;
+        currentPos = Mathf.Clamp(currentPos + speed * Time.deltaTime, 0f, splineLength); //Gets current position of cart along a length equal to the splne length
+        float normalizedPos = currentPos / splineLength; //Finds the position on the actual spline
 
-        cartSpline.Spline.Evaluate(normalizedPos, out var localPos, out var localDir, out var localUp);
+        cartSpline.Spline.Evaluate(normalizedPos, out var localPos, out var localDir, out var localUp);//Gives us data of spline at desired position
 
+        ///Find the world position of the spline points as well as directions
         Vector3 worldPos = cartSpline.transform.TransformPoint(localPos);
         Vector3 worldDir = cartSpline.transform.TransformDirection(localDir);
         Vector3 worldUp = cartSpline.transform.TransformDirection(localUp);
 
         Quaternion splineRot = Quaternion.LookRotation(worldDir, Vector3.up);
+        Quaternion offset = Quaternion.Euler(0f, -90f, 0f); //Because the carts forward axis is not X, it is Z
 
-        // If your cart’s forward axis is +X instead of +Z:
-        Quaternion offset = Quaternion.Euler(0f, -90f, 0f);
-
+        //Set cart to position along the spline in the world space
         transform.SetPositionAndRotation(worldPos, splineRot * offset);
     }
 
@@ -90,11 +94,39 @@ public class CartController : MonoBehaviour
         return currentSpeed;
     }
 
-
     public void ChangeState(CartState _state)
     {
         state = _state;
         Debug.Log("Current State: " + state.ToString());
     }
+
+    /// <summary>
+    /// Finds the closest spline position (distance along spline) to a given world position.
+    /// Got help from COPILOT for this
+    /// </summary>
+    float FindClosestSplinePos(Vector3 worldPos, int samples = 100)
+    {
+        float splineLength = cartSpline.Spline.GetLength();
+        float closestDistance = float.MaxValue;
+        float closestPos = 0f;
+
+        for (int i = 0; i <= samples; i++)
+        {
+            float normalizedPos = i / (float)samples;
+            cartSpline.Spline.Evaluate(normalizedPos, out var localPos, out _, out _);
+
+            Vector3 sampleWorldPos = cartSpline.transform.TransformPoint(localPos);
+            float dist = Vector3.Distance(worldPos, sampleWorldPos);
+
+            if (dist < closestDistance)
+            {
+                closestDistance = dist;
+                closestPos = normalizedPos * splineLength;
+            }
+        }
+
+        return closestPos;
+    }
 }
+
 
