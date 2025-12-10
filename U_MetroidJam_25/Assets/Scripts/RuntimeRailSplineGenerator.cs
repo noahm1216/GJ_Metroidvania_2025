@@ -184,6 +184,22 @@ public class RuntimeRailSplineGenerator : MonoBehaviour
         };
 
         currentChunk.spline.Add(knot);
+        
+        // 👉 NEW: give the *first* knot in this chunk a proper tangent
+        if (currentChunk.spline.Count == 1)
+        {
+            // Predict where the *next* knot will roughly be
+            float xNext = x + knotSpacing;
+            float hNext = SampleHeight(xNext);
+            Vector3 worldNext = new Vector3(xNext, hNext, 0f);
+            float3 localNext = (float3)container.transform.InverseTransformPoint(worldNext);
+
+            var k0 = currentChunk.spline[0];
+            // Use half the segment as tangent length so it's not crazy long
+            k0.TangentOut = (localNext - k0.Position) * 0.5f;
+            currentChunk.spline[0] = k0;
+        }
+        // ---------------------------------
 
         // Track extents for chunk trimming
         if (x < currentChunk.minX) currentChunk.minX = x;

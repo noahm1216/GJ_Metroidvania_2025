@@ -8,6 +8,7 @@ public class RockSpawner : MonoBehaviour
     public List<GameObject> rockObjs;
     public float spawnDelayMin, spawnDelayMax, spawnRadius;
     public Transform rockHolder;
+    public GameObject rockWarningUI;
     
     // Start is called before the first frame update
     void Start()
@@ -33,15 +34,25 @@ public class RockSpawner : MonoBehaviour
     
     IEnumerator SpawnCoroutine ()
     {
-        WaitForSeconds waitTime = new WaitForSeconds(Random.Range(spawnDelayMin, spawnDelayMax));
+        //float randomTime = Random.Range(spawnDelayMin, spawnDelayMax);
+        
+        //WaitForSeconds waitTime = new WaitForSeconds(Random.Range(spawnDelayMin, spawnDelayMax)+1);
         while (true) {
-            // Vector3 brownSpawnPos = new Vector3 (Random.Range (0, width), 0, Random.Range (0, length));
-            // Vector3 yellowSpawnPos = new Vector3 (Random.Range (0, width), 0, Random.Range (0, length));
-            Instantiate (rockObjs[Random.Range(0, rockObjs.Count - 1)], transform.position + (Random.insideUnitSphere * spawnRadius), Quaternion.identity, rockHolder);
-            Instantiate (rockObjs[Random.Range(0, rockObjs.Count - 1)], transform.position + (Random.insideUnitSphere * spawnRadius), Quaternion.identity, rockHolder);
-            Instantiate (rockObjs[Random.Range(0, rockObjs.Count - 1)], transform.position + (Random.insideUnitSphere * spawnRadius), Quaternion.identity, rockHolder);
-            //Instantiate (yellowPrefab, brownSpawnPos, Quaternion.identity, laneTransform);
-            yield return waitTime;
+            float randomTime = Random.Range(spawnDelayMin, spawnDelayMax);
+            
+            yield return new WaitForSeconds(randomTime - 2f);
+            
+            RockFallWarning();
+            yield return new WaitForSeconds(2f);
+            rockWarningUI.SetActive(false);
+            Instantiate (rockObjs[Random.Range(0, rockObjs.Count - 1)], transform.position, Quaternion.identity, rockHolder);
+            //make it wait time plus 1 and then during that 1 second play the warning
         }
+    }
+    
+    void RockFallWarning()
+    {
+        rockWarningUI.SetActive(true);
+        Debug.Log("⚠ Warning - spawn in 1 second!");
     }
 }
