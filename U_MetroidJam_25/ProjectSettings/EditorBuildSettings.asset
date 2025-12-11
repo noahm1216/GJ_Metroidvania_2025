@@ -4,6 +4,9 @@
 EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
-  m_Scenes: []
+  m_Scenes:
+  - enabled: 1
+    path: Assets/Scenes/CartRunnerMinigame.unity
+    guid: 8f724b9dfa4936b40ac69ed9684353fb
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: e20dc028824e8974980cf1183a9c34d5, type: 3}

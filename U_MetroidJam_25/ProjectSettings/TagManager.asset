@@ -7,6 +7,8 @@ TagManager:
   - Cart
   - PowerUps
   - Ground
+  - rock
+  - exit
   layers:
   - Default
   - TransparentFX
