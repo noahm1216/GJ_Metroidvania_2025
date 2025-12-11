@@ -22,7 +22,8 @@ public class FallingRock : MonoBehaviour
     {
         if (collision.gameObject.CompareTag("Player"))
         {
-            SceneManager.LoadScene("CartRunnerMinigame");
+            MinecartRespawner.Instance.RespawnUI();
+            //SceneManager.LoadScene("CartRunnerMinigame");
         }
     }
 }

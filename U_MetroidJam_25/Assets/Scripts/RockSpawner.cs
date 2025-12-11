@@ -45,7 +45,12 @@ public class RockSpawner : MonoBehaviour
             RockFallWarning();
             yield return new WaitForSeconds(2f);
             rockWarningUI.SetActive(false);
-            Instantiate (rockObjs[Random.Range(0, rockObjs.Count - 1)], transform.position, Quaternion.identity, rockHolder);
+            // Generate a random angle for the Y-axis
+            float randomAngle = Random.Range(0f, 360f);
+
+            // Create a Quaternion representing only Y-axis rotation
+            Quaternion randomRotation = Quaternion.Euler(randomAngle, randomAngle, randomAngle);
+            Instantiate (rockObjs[Random.Range(0, rockObjs.Count - 1)], transform.position, randomRotation, rockHolder);
             //make it wait time plus 1 and then during that 1 second play the warning
         }
     }
