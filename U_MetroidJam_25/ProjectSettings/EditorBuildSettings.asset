@@ -8,5 +8,8 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/CartRunnerMinigame.unity
     guid: 8f724b9dfa4936b40ac69ed9684353fb
+  - enabled: 1
+    path: Assets/Scenes/Prototype/General/Level_01.unity
+    guid: fe07fbd9230cc7147bfb5d8cf1f1d568
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: e20dc028824e8974980cf1183a9c34d5, type: 3}
