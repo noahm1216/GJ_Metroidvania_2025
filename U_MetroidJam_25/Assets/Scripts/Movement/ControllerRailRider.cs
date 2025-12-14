@@ -167,13 +167,11 @@ public class ControllerRailRider : MonoBehaviour
         if (jumpNow)
         {
             jumpNow = false;
-            print("JUMP:1");
 
             if (motionState == MOTIONSTATE.RidingRail)
                 JumpOffRail();
             else if (motionState == MOTIONSTATE.RidingCart)
             {
-                print("JUMP:1-RidingCart");
                 transform.position += new Vector3(0, 1, 0);
                 ChangeMotion(MOTIONSTATE.NotRiding);
                 if (cartTriggerActionRef) cartTriggerActionRef.RemovePlayer();
