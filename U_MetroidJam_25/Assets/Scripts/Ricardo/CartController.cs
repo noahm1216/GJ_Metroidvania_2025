@@ -57,6 +57,7 @@ public class CartController : MonoBehaviour
                 break;
             default:
                 state = CartState.Idle;
+                if (moveAmount.x > 0.15f) moveAmount -= (new Vector2(1, 1) * Time.deltaTime);
                 break;
         }
     }

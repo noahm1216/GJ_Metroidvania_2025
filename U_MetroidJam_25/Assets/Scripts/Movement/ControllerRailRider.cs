@@ -15,7 +15,7 @@ public class ControllerRailRider : MonoBehaviour
     public float speedHorizontal = 350;
     public float speedSprintMultiplier = 2;
 
-    public int numberOfJump = 1;
+    public int numberOfJump = 2;
     public float speedJumpPower = 500;
     public LayerMask jumpRestoreLayers;
     private bool facingRight;
@@ -28,6 +28,7 @@ public class ControllerRailRider : MonoBehaviour
     private string cartTag = "Cart";
     private bool inCart;
     private bool cartTouchingRails;
+    private TriggerAction cartTriggerActionRef;
     
 
 
@@ -123,6 +124,7 @@ public class ControllerRailRider : MonoBehaviour
                 vfxRiding.SetActive(true);
                 break;
             case MOTIONSTATE.RidingCart:
+                jumpsRemaining = numberOfJump;
                 break;
             case MOTIONSTATE.EndlessCart:
                 break;
@@ -154,7 +156,7 @@ public class ControllerRailRider : MonoBehaviour
             case MOTIONSTATE.RidingRail:
                 MovePlayerAlongRail();
                 break;
-            case MOTIONSTATE.RidingCart:
+            case MOTIONSTATE.RidingCart:               
                 break;
             case MOTIONSTATE.EndlessCart:
                 break;
@@ -165,22 +167,33 @@ public class ControllerRailRider : MonoBehaviour
         if (jumpNow)
         {
             jumpNow = false;
+            print("JUMP:1");
 
             if (motionState == MOTIONSTATE.RidingRail)
                 JumpOffRail();
             else if (motionState == MOTIONSTATE.RidingCart)
-            { ChangeMotion(MOTIONSTATE.NotRiding); CartData(null, false, null); JumpNormally();}
+            {
+                print("JUMP:1-RidingCart");
+                transform.position += new Vector3(0, 1, 0);
+                ChangeMotion(MOTIONSTATE.NotRiding);
+                if (cartTriggerActionRef) cartTriggerActionRef.RemovePlayer();
+                CartData(null, false, null);                
+                JumpNormally();
+            }
             else
                 JumpNormally();
         }
 
     }
 
-    private void CartData(Transform _cartObj, bool _inCart, Transform _newParent)
-    {
-        if (_cartObj) { cartObj = _cartObj; cartObj.TryGetComponent(out cartRb3d); }
-        if (cartObj) { inCart = _inCart; cartObj.SetParent(_newParent); }
-        if (cartRb3d) { if (_inCart) cartRb3d.isKinematic = true; else cartRb3d.isKinematic = false; }
+    public void CartData(Transform _cartObj, bool _inCart, Transform _newParent)
+    {        
+        if (_cartObj) { _cartObj.TryGetComponent(out cartTriggerActionRef); cartObj = _cartObj.parent; }
+        else { if (cartObj) transform.SetParent(cartObj.parent); else transform.SetParent(null); cartObj = _cartObj;  }
+        inCart = _inCart;
+        if (cartObj) { cartObj.TryGetComponent(out cartRb3d);  transform.SetParent(cartObj); transform.position = cartObj.position + new Vector3(0, 0.25f, 0); }
+        if (rb3d) { rb3d.isKinematic = _inCart; }
+       
     }
 
     public void ChangeMotion(MOTIONSTATE _newState)
@@ -255,8 +268,8 @@ public class ControllerRailRider : MonoBehaviour
 
     private void OnCollisionEnter(Collision col)
     {
-        if(col.transform.tag == cartTag) // reference the cart data
-            CartData(col.transform, (Mathf.Abs(transform.position.x - col.transform.position.x) < 1.4f), transform);
+        //if(col.transform.tag == cartTag) // reference the cart data
+            //CartData(col.transform, (Mathf.Abs(transform.position.x - col.transform.position.x) < 1.4f), transform);
 
         // Reset jumps if collision with appropriate layer
         if (((1 << col.gameObject.layer) & jumpRestoreLayers) != 0 && col.transform.position.y < transform.position.y)

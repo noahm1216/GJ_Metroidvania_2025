@@ -7,6 +7,8 @@ public class TriggerAction : MonoBehaviour
 {
     public CartController cartController;
     private bool playerDetected;
+    private ControllerRailRider playerRailRiderRef;
+    private ControllerRailRider rider;
 
     // Start is called before the first frame update
     void Start()
@@ -18,23 +20,29 @@ public class TriggerAction : MonoBehaviour
         }
     }
 
-    // Update is called once per frame
-    void Update()
-    {
-        
-    }
 
     private void OnTriggerEnter(Collider other)
     {
-        ControllerRailRider rider = other.gameObject.GetComponentInParent<ControllerRailRider>();
+        rider = other.gameObject.GetComponentInParent<ControllerRailRider>();
 
-        if(rider != null && playerDetected == false)
+        if (rider != null && playerDetected == false)
         {
             playerDetected = true;
-            cartController.ChangeState(CartController.CartState.Controlled);
-            rider.ChangeMotion(ControllerRailRider.MOTIONSTATE.RidingCart);
+            if (cartController) cartController.ChangeState(CartController.CartState.Controlled);
+            if (rider) rider.ChangeMotion(ControllerRailRider.MOTIONSTATE.RidingCart);
+            other.TryGetComponent(out playerRailRiderRef);
+            if (playerRailRiderRef) playerRailRiderRef.CartData(transform, true, transform);
             Debug.Log("Player detected");
         }
+    }
+
+    public void RemovePlayer()
+    {
+        playerDetected = false;
+        if (cartController) { cartController.ChangeState(CartController.CartState.Idle); }
+        if (rider) { rider.ChangeMotion(ControllerRailRider.MOTIONSTATE.NotRiding); }
+        Debug.Log("Player removed from cart");
+
     }
 
     private void OnTriggerExit(Collider other)
