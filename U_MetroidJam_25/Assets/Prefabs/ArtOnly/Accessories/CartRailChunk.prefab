@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 4687801712654025300}
   - component: {fileID: 2946152386997489164}
   - component: {fileID: 2543757534386039967}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: Cube (1)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -114,7 +114,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 5176370911087817243}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: Model
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -153,7 +153,7 @@ GameObject:
   - component: {fileID: 8873424270433455864}
   - component: {fileID: 984161034942217038}
   - component: {fileID: 7465392026004309947}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: Cube (3)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -258,7 +258,7 @@ GameObject:
   - component: {fileID: 7823644679302090600}
   - component: {fileID: 3551045786177271517}
   - component: {fileID: 9188333639721226772}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: Cube (2)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -363,7 +363,7 @@ GameObject:
   - component: {fileID: 1452942767254973115}
   - component: {fileID: 2104849936035436525}
   - component: {fileID: 4434484967103226093}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: Cube
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -465,7 +465,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 4657047835631110720}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: CartRailChunk
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -500,7 +500,7 @@ GameObject:
   - component: {fileID: 8945369044005998447}
   - component: {fileID: 3386072568249297726}
   - component: {fileID: 6369607668958782393}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: Cube (4)
   m_TagString: Untagged
   m_Icon: {fileID: 0}

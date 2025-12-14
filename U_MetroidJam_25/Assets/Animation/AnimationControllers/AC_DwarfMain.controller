@@ -35,7 +35,7 @@ AnimatorState:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: Idle_Selected
+  m_Name: Idle_SkatingRails
   m_Speed: 1
   m_CycleOffset: 0
   m_Transitions:
@@ -50,7 +50,7 @@ AnimatorState:
   m_MirrorParameterActive: 0
   m_CycleOffsetParameterActive: 0
   m_TimeParameterActive: 0
-  m_Motion: {fileID: -203655887218126122, guid: 744b6ad9b4e7d2b4b9e12286b7c8f4d9, type: 3}
+  m_Motion: {fileID: -203655887218126122, guid: 815f65c704ab0794c8bd18c17648669a, type: 3}
   m_Tag: 
   m_SpeedParameter: 
   m_MirrorParameter: 
