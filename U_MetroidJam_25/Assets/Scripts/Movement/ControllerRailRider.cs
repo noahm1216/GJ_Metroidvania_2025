@@ -21,6 +21,11 @@ public class ControllerRailRider : MonoBehaviour
     private bool facingRight;
     private Vector3 levelStartPos, lastGroundPos;
 
+    [Header("Animations")]
+    public Animator animCon;
+    private string animWalking = "walking";
+    private string animRidingRail = "ridingRail";
+
     [Header("Cart Riding")]
     public LayerMask cartRailsMask;
     public Transform cartObj;
@@ -139,6 +144,13 @@ public class ControllerRailRider : MonoBehaviour
             jumpNow = true;
             jumpTimeStamp = Time.time;
             jumpsRemaining--;
+        }
+
+        // Animation logic
+        if (animCon)
+        {
+            animCon.SetBool(animRidingRail, motionState == MOTIONSTATE.RidingRail);
+            animCon.SetBool(animWalking, Mathf.Abs(movementInput.x) > deadzone);
         }
     }
 

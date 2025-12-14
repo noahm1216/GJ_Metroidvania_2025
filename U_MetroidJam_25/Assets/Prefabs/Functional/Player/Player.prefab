@@ -59,7 +59,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1220335826566920315}
   serializedVersion: 2
-  m_LocalRotation: {x: -0, y: 0.70710576, z: -0, w: 0.70710784}
+  m_LocalRotation: {x: 0, y: 0.7071068, z: 0, w: 0.7071068}
   m_LocalPosition: {x: 8, y: -0.90999985, z: 0}
   m_LocalScale: {x: 1.5, y: 1.5, z: 1.5}
   m_ConstrainProportionsScale: 0
@@ -115,6 +115,7 @@ MonoBehaviour:
   jumpRestoreLayers:
     serializedVersion: 2
     m_Bits: 4294967295
+  animCon: {fileID: 8142852320666924204}
   cartRailsMask:
     serializedVersion: 2
     m_Bits: 128
@@ -343,6 +344,11 @@ PrefabInstance:
 --- !u!4 &4511911952439643422 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 1705119121175262502, guid: eecd5d9c9e6741c41a038c5e418315aa, type: 3}
+  m_PrefabInstance: {fileID: 2969073703790426168}
+  m_PrefabAsset: {fileID: 0}
+--- !u!95 &8142852320666924204 stripped
+Animator:
+  m_CorrespondingSourceObject: {fileID: 6356124744864009364, guid: eecd5d9c9e6741c41a038c5e418315aa, type: 3}
   m_PrefabInstance: {fileID: 2969073703790426168}
   m_PrefabAsset: {fileID: 0}
 --- !u!1001 &3761079981854611143
